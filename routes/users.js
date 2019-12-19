@@ -1,5 +1,6 @@
-var MongoClient = require('mongodb').MongoClient
-var dbConfig    = require('../db-config')
+var MongoClient = require('mongodb').MongoClient;
+var dbConfig    = require('../db-config');
+var collectionName  = 'users';
 
 var bcrypt = require('bcryptjs');
 var salt = bcrypt.genSaltSync(10);
@@ -8,8 +9,8 @@ exports.getAll = function(req, res){
     MongoClient.connect(dbConfig.dbUrl, function (err, client) {
         if (err) throw err;
 
-        var db = client.db('auction');
-        var users = db.collection('users');
+        var db = client.db(dbConfig.dbName);
+        var users = db.collection(collectionName);
 
         users.find().toArray(function (err, result) {
             if (err) throw err;
@@ -19,8 +20,27 @@ exports.getAll = function(req, res){
                 count: result.length,
                 users: result
             })
-            //console.log('Password match: ' + bcrypt.compareSync("mert1234", req.body.password) );
         });
+    });
+};
+
+exports.getByToken = function(req, res){
+    MongoClient.connect(dbConfig.dbUrl, function (err, client) {
+        if (err) throw err;
+
+        var db = client.db(dbConfig.dbName);
+        var users = db.collection(collectionName);
+
+        var token = req.headers.authorization;
+
+        users.find({token: token}).toArray(function (err, result) {
+            if (err) throw err;
+
+            res.json({
+                user: result[0]
+            })
+        });
+
     });
 };
 
@@ -28,8 +48,8 @@ exports.auth = function (req, res) {
     MongoClient.connect(dbConfig.dbUrl, function (err, client) {
         if (err) throw err;
 
-        var db = client.db('auction');
-        var users = db.collection('users');
+        var db = client.db(dbConfig.dbName);
+        var users = db.collection(collectionName);
 
         users.find({email: req.body.email}).toArray(function (err, result) {
             if (err) throw err;
@@ -52,12 +72,25 @@ exports.auth = function (req, res) {
                 return;
             }
 
-            res.json({
-                status: 'Success',
-                match: passwordMatch,
-                user: result
-            })
+            require('crypto').randomBytes(48, function(err, buffer) {
+                var token = buffer.toString('hex');
 
+                try {
+                    users.updateOne(
+                        { email: result[0].email },
+                        { $set: {
+                                token: token
+                            }
+                        });
+                    res.json({
+                        token: token,
+                    });
+                }catch (e) {
+                    res.status(500).json({
+                        message: "A problem occured when generating a token for the user."
+                    });
+                }
+            });
         });
     });
 };
@@ -66,8 +99,8 @@ exports.store = function(req, res) {
     MongoClient.connect(dbConfig.dbUrl, function (err, client) {
         if (err) throw err;
 
-        var db = client.db('auction');
-        var users = db.collection('users');
+        var db = client.db(dbConfig.dbName);
+        var users = db.collection(collectionName);
 
         users.find({email: req.body.email}).toArray(function (err, result) {
             if (err) throw err;
@@ -78,6 +111,12 @@ exports.store = function(req, res) {
                 });
                 return;
             }
+            var newUser = {
+                nameSurname: req.body.nameSurname,
+                email: req.body.email,
+                password: req.body.password,
+                registrationDate: Date.now()
+            };
             users.insertOne(req.body);
             res.json({
                 message: 'Kullanıcı başarıyla kaydedildi!'

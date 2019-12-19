@@ -9,8 +9,10 @@ app.use(express.json());
 
 app.get('/users',(req, res) => users.getAll(req, res));
 
-app.post('/authenticate',(req, res) => users.auth(req, res));
+app.post('/user/authenticate',(req, res) => users.auth(req, res));
 
-app.post('/user', (req, res) => users.store(req, res));
+app.post('/user/get', (req, res) => users.getByToken(req, res));
+
+app.post('/user/save', (req, res) => users.store(req, res));
 
 app.listen(port, () => console.log(`Auction API listening on port ${port}!`));
