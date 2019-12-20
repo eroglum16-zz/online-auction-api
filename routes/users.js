@@ -95,7 +95,7 @@ exports.auth = function (req, res) {
     });
 };
 
-exports.store = function(req, res) {
+exports.save = function(req, res) {
     MongoClient.connect(dbConfig.dbUrl, function (err, client) {
         if (err) throw err;
 
