@@ -22,11 +22,16 @@ exports.processProductImage = function (req, res) {
 
         uploadedFile.mv(filePath , function(err) {
             if (err)
-                return res.status(500).send(err);
+                return res.status(500).json({message: err});
 
             res.send(fileName);
         });
 
     });
 
+};
+
+exports.revertProductImage = function (req, res) {
+    console.log(req.body);
+    res.send("Deleted");
 };

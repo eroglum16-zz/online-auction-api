@@ -13,6 +13,7 @@ app.use(fileUpload());
 
 app.use(cors());
 app.use(express.json());
+app.use(express.static('public'));
 
 /* ---------- User Endpoints ---------- */
 
@@ -32,10 +33,16 @@ app.post('/locations',(req, res) => locations.save(req, res));
 
 /* ---------- Sales Endpoints ---------- */
 
-app.post('/sales/new', (req, res) => sales.save(req, res));
+app.get('/sale/:id', (req, res) => sales.getSaleById(req, res));
+
+app.post('/sale/new', (req, res) => sales.save(req, res));
+
+app.get('/sales/active', (req, res) => sales.getActiveSales(req, res));
 
 /* ---------- File Endpoints ---------- */
 
-app.post('/file/product',(req, res) => files.processProductImage(req, res));
+app.post('/file/product', (req, res) => files.processProductImage(req, res));
 
-app.listen(port, () => console.log(`Auction API listening on port ${port}!`));
+app.delete('/file/product', (req, res) => files.revertProductImage(req, res));
+
+app.listen(port, () => console.log(`Auction API listening on port ${port}! Started at: ` + Date(Date.now()) ));

@@ -7,13 +7,15 @@ var salt = bcrypt.genSaltSync(10);
 
 exports.getAll = function(req, res){
     MongoClient.connect(dbConfig.dbUrl, function (err, client) {
-        if (err) throw err;
+        if (err)
+            return res.status(500).json({message: err});
 
         var db = client.db(dbConfig.dbName);
         var users = db.collection(collectionName);
 
         users.find().toArray(function (err, result) {
-            if (err) throw err;
+            if (err)
+                return res.status(500).json({message: err});
 
             res.json({
                 status: 'Success',
@@ -26,7 +28,8 @@ exports.getAll = function(req, res){
 
 exports.getByToken = function(req, res){
     MongoClient.connect(dbConfig.dbUrl, function (err, client) {
-        if (err) throw err;
+        if (err)
+            return res.status(500).json({message: err});
 
         var db = client.db(dbConfig.dbName);
         var users = db.collection(collectionName);
@@ -34,7 +37,8 @@ exports.getByToken = function(req, res){
         var token = req.headers.authorization;
 
         users.find({token: token}).toArray(function (err, result) {
-            if (err) throw err;
+            if (err)
+                return res.status(500).json({message: err});
 
             res.json({
                 user: result[0]
@@ -46,13 +50,14 @@ exports.getByToken = function(req, res){
 
 exports.auth = function (req, res) {
     MongoClient.connect(dbConfig.dbUrl, function (err, client) {
-        if (err) throw err;
+        if (err) return res.status(500).json({message: err});
 
         var db = client.db(dbConfig.dbName);
         var users = db.collection(collectionName);
 
         users.find({email: req.body.email}).toArray(function (err, result) {
-            if (err) throw err;
+            if (err)
+                return res.status(500).json({message: err});
 
             if(result.length===0){
                 res.status(404).json({
@@ -97,13 +102,19 @@ exports.auth = function (req, res) {
 
 exports.save = function(req, res) {
     MongoClient.connect(dbConfig.dbUrl, function (err, client) {
-        if (err) throw err;
+        if (err)
+            return res.status(500).json({message: err});
 
         var db = client.db(dbConfig.dbName);
         var users = db.collection(collectionName);
 
         users.find({email: req.body.email}).toArray(function (err, result) {
-            if (err) throw err;
+            if (err){
+                res.status(500).json({
+                    message: err
+                });
+                return;
+            }
 
             if(result.length!==0){
                 res.status(409).json({
@@ -117,10 +128,15 @@ exports.save = function(req, res) {
                 password: req.body.password,
                 registrationDate: Date.now()
             };
-            users.insertOne(req.body);
-            res.json({
-                message: 'Kullanıcı başarıyla kaydedildi!'
-            });
+            try {
+                users.insertOne(req.body);
+                res.json({
+                    message: 'Kullanıcı başarıyla kaydedildi!'
+                });
+            }catch (e) {
+                res.status(500).json({message: e});
+            }
+
         });
     });
 };
