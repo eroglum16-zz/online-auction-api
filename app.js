@@ -4,16 +4,24 @@ const locations = require('./routes/locations');
 const files = require('./routes/files');
 const sales = require('./routes/sales')
 const fileUpload = require('express-fileupload');
+const bodyParser = require('body-parser');
+const utils = require('./utils');
+
 
 const app = express();
 const port = 3030;
 const cors = require('cors');
+app.use(cors({credentials: true, origin: 'http://localhost:3000'}));
+
+var http = require('http').createServer(app);
+var io = require('socket.io')(http);
 
 app.use(fileUpload());
 
-app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
+
+app.use(bodyParser.text({ type: 'text/plain' }));
 
 /* ---------- User Endpoints ---------- */
 
@@ -45,4 +53,29 @@ app.post('/file/product', (req, res) => files.processProductImage(req, res));
 
 app.delete('/file/product', (req, res) => files.revertProductImage(req, res));
 
-app.listen(port, () => console.log(`Auction API listening on port ${port}! Started at: ` + Date(Date.now()) ));
+var server = app.listen(port, () => console.log(`Auction API listening on port ${port}! Started at: ` + Date(Date.now()) ));
+io.listen(server);
+
+/* ---------- Socket Events ----------  */
+
+io.on('connection', socket => {
+    console.log('User connected');
+
+    socket.on('new bid', (msg) => {
+      console.log(msg);
+      sales.updateBids(msg.saleId, msg.bid);
+      socket.broadcast.emit('bid update on ' + msg.saleId);
+    });
+
+    socket.on('new sale', (msg) => {
+        socket.broadcast.emit('update sales');
+        let remaining = utils.toTimestamp(msg.endDate) - Date.now();
+        setTimeout(() => {
+            socket.broadcast.emit('sale ' + msg.saleId + ' expired');
+        }, remaining);
+    });
+
+    socket.on('disconnect', () => {
+      console.log('user disconnected')
+    });
+});

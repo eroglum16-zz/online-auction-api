@@ -1,3 +1,5 @@
+const fs = require('fs');
+
 exports.processProductImage = function (req, res) {
 
     let uploadedFile = req.files.filepond;
@@ -5,15 +7,6 @@ exports.processProductImage = function (req, res) {
     require('crypto').randomBytes(16, function(err, buffer) {
 
         var uniqueId = buffer.toString('hex');
-
-        /*
-        var filePath = './tmp/' + uniqueId;
-
-        if (!fs.existsSync(filePath)){
-            fs.mkdirSync(filePath);
-        }
-        filePath = filePath + '/' + uploadedFile.name;
-        */
 
         var fileNameTokens  = uploadedFile.name.split(".");
         var extension       = fileNameTokens[fileNameTokens.length-1];
@@ -32,6 +25,13 @@ exports.processProductImage = function (req, res) {
 };
 
 exports.revertProductImage = function (req, res) {
-    console.log(req.body);
-    res.send("Deleted");
+    const fileName = req.body;
+
+    let filePath = "./tmp/" + fileName;
+
+    fs.unlink(filePath, (err) => {
+        if (err){
+            res.status(500).json({message: "Geçici resim silinirken bir hata oluştu."});
+        }else res.json({message: "Geçici resim başarıyla silindi."});
+    });
 };

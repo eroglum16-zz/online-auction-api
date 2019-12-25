@@ -79,9 +79,18 @@ exports.save = function(req, res) {
             const sales = db.collection(collectionName);
 
             try {
-                sales.insertOne(newSale);
-                res.json({
-                    message: "Satış başarıyla kaydedildi."
+                sales.insertOne(newSale, (error, response) => {
+                    if(error) {
+                        console.log('Error occurred while inserting');
+                        res.status(500).json({
+                            message: error
+                        });
+                    } else {
+                        res.json({
+                            message: "Satış başarıyla kaydedildi.",
+                            saleId: response.insertedId
+                        });
+                    }
                 });
             }catch (e) {
                 res.status(500);
@@ -92,7 +101,6 @@ exports.save = function(req, res) {
 
     });
 };
-
 exports.getActiveSales = function (req, res) {
     MongoClient.connect(dbConfig.dbUrl, function (err, client) {
         if (err)
@@ -101,7 +109,7 @@ exports.getActiveSales = function (req, res) {
         const db = client.db(dbConfig.dbName);
         const sales = db.collection(collectionName);
 
-        sales.find().toArray(function (err, result) {
+        sales.find().sort( { startDate: -1 } ).toArray(function (err, result) {
             if (err)
                 return res.status(500).json({message: err});
 
@@ -144,5 +152,34 @@ exports.getSaleById = function (req, res) {
                 });
             }
         });
+    });
+};
+exports.updateBids = function (saleId, bid) {
+    MongoClient.connect(dbConfig.dbUrl, function (err, client) {
+        if (err) {
+            res.status(500)
+            throw err
+        }
+        const db = client.db(dbConfig.dbName);
+        const sales = db.collection(collectionName);
+        const ObjectId = require('mongodb').ObjectId;
+
+        try {
+            var o_id = new ObjectId(saleId);
+        }catch (e) {
+            return res.status(404).json({
+                message: "Verilen id geçerli değil."
+            });
+        }
+
+        try {
+            sales.update(
+                { _id: o_id },
+                { $addToSet: { bids:  bid  } }
+            );
+        }catch (e) {
+            console.log(e);
+            res.status(500);
+        }
     });
 };
