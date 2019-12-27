@@ -36,7 +36,14 @@ exports.getByToken = function(req, res){
 
         var token = req.headers.authorization;
 
-        users.find({token: token}).toArray(function (err, result) {
+        users.find({
+                token: token
+            }, {
+                projection: {
+                    token: 0,
+                    password: 0
+                }
+            }).toArray(function (err, result) {
             if (err)
                 return res.status(500).json({message: err});
 

@@ -45,7 +45,9 @@ app.get('/sale/:id', (req, res) => sales.getSaleById(req, res));
 
 app.post('/sale/new', (req, res) => sales.save(req, res));
 
-app.get('/sales/active', (req, res) => sales.getActiveSales(req, res));
+app.get('/sales', (req, res) => sales.getActiveSales(req, res));
+
+app.get('/sales/expired/:user', (req, res) => sales.getActiveSalesByUserEmail(req, res));
 
 /* ---------- File Endpoints ---------- */
 

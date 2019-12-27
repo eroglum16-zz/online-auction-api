@@ -154,6 +154,36 @@ exports.getSaleById = function (req, res) {
         });
     });
 };
+exports.getActiveSalesByUserEmail = function (req, res) {
+    MongoClient.connect(dbConfig.dbUrl, function (err, client){
+        if (err)
+            return res.status(500).json({message: err});
+
+        const db = client.db(dbConfig.dbName);
+        const sales = db.collection(collectionName);
+
+        const userEmail = req.params.user;
+
+        sales.find({
+            "owner.email": userEmail,
+            endDate: { $lt: Date.now() }
+        }).toArray((err, result) => {
+            if(err)
+                return res.status(500).json({message: err});
+
+            if (result.length === 0){
+                res.status(404).json({
+                    message: "Kullanıcıya ait satış bulunamadı.."
+                });
+            }else{
+                res.json({
+                    sales: result,
+                    count: result.length
+                });
+            }
+        });
+    });
+};
 exports.updateBids = function (saleId, bid) {
     MongoClient.connect(dbConfig.dbUrl, function (err, client) {
         if (err) {
