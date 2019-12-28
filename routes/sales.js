@@ -42,7 +42,18 @@ exports.save = function(req, res) {
         },1000);
 
         var token = req.headers.authorization;
-        db.collection('users').find({token: token}).toArray(function (err, result) {
+        if (!token){
+            res.status(401).json({
+                message: 'Bu işlemi yapmak için önce giriş yapmalısınız.'
+            });
+            return;
+        }
+        db.collection('users').find({token: token}, {
+            projection: {
+                token: 0,
+                password: 0
+            }
+        }).toArray(function (err, result) {
             if (err){
                 res.status(500);
                 throw err;
@@ -54,12 +65,7 @@ exports.save = function(req, res) {
                     message: 'Bu işlemi yapmak için önce giriş yapmalısınız.'
                 });
 
-            var user = result[0];
-
-            var owner = {
-                email: user.email,
-                nameSurname: user.nameSurname
-            };
+            var owner = result[0];
 
             var newSale = {
                 owner: owner,
@@ -154,7 +160,7 @@ exports.getSaleById = function (req, res) {
         });
     });
 };
-exports.getActiveSalesByUserEmail = function (req, res) {
+exports.getExpiredSalesByUserEmail = function (req, res) {
     MongoClient.connect(dbConfig.dbUrl, function (err, client){
         if (err)
             return res.status(500).json({message: err});
@@ -181,6 +187,68 @@ exports.getActiveSalesByUserEmail = function (req, res) {
                     count: result.length
                 });
             }
+        });
+    });
+};
+exports.getExpiredPurchasesByUserEmail = function(req, res){
+    MongoClient.connect(dbConfig.dbUrl, function (err, client) {
+        if (err){
+            res.status(500).json({
+                message: err
+            });
+            return;
+        }
+
+        const db = client.db(dbConfig.dbName);
+        const sales = db.collection(collectionName);
+
+        const userEmail = req.params.user;
+
+        sales.find({
+            "bids.bidder.email": userEmail
+        },{
+            projection: {
+                bids:1
+            }
+        }).toArray((err, bidSales) => {
+            if (err){
+                res.status(500).json({
+                    message: err
+                });
+                return;
+            }
+            const ObjectId = require('mongodb').ObjectId;
+
+            let i, maxBid, o_id;
+            let saleIds = [];
+            for(i in bidSales){
+                maxBid = bidSales[i].bids.reduce((a, b) => {
+                    return a.amount > b.amount ? a : b;
+                });
+                if (maxBid.bidder.email === userEmail){
+                    try {
+                        o_id = new ObjectId(bidSales[i]._id);
+                        saleIds.push(o_id);
+                    }catch (e){}
+                }
+            }
+
+            sales.find({
+                _id: {$in: saleIds}
+            }).toArray((error, result) => {
+                if (error){
+                    res.status(500).json({
+                        message: err
+                    });
+                    return;
+                }
+                else{
+                    res.json({
+                        sales: result,
+                        count: result.length
+                    });
+                }
+            });
         });
     });
 };
