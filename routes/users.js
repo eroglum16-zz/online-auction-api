@@ -40,7 +40,6 @@ exports.getByToken = function(req, res){
                 token: token
             }, {
                 projection: {
-                    token: 0,
                     password: 0
                 }
             }).toArray(function (err, result) {
@@ -122,8 +121,7 @@ exports.save = function(req, res) {
                 });
                 return;
             }
-
-            if(result.length!==0){
+            if(result.length !== 0){
                 res.status(409).json({
                     message: 'Bu email kullanımda.'
                 });
@@ -136,12 +134,12 @@ exports.save = function(req, res) {
                 registrationDate: Date.now()
             };
             try {
-                users.insertOne(req.body);
+                //users.insertOne(req.body);
                 res.json({
-                    message: 'Kullanıcı başarıyla kaydedildi!'
+                    message: 'Kullanıcı başarıyla kaydedildi.'
                 });
             }catch (e) {
-                res.status(500).json({message: e});
+                res.status(500).json({message: "Kullanıcı kaydedilirken bir sorun oluştur."});
             }
 
         });

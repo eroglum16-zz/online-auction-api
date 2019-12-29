@@ -107,7 +107,7 @@ exports.save = function(req, res) {
 
     });
 };
-exports.getActiveSales = function (req, res) {
+exports.getAllSales = function (req, res) {
     MongoClient.connect(dbConfig.dbUrl, function (err, client) {
         if (err)
             return res.status(500).json({message: err});
@@ -115,9 +115,19 @@ exports.getActiveSales = function (req, res) {
         const db = client.db(dbConfig.dbName);
         const sales = db.collection(collectionName);
 
-        sales.find().sort( { startDate: -1 } ).toArray(function (err, result) {
+        let query = req.query.q ? { $or: [
+                {title: {$regex: req.query.q, $options: 'i'}},
+                {description: {$regex: req.query.q, $options: 'i'}},
+                {"owner.nameSurname": {$regex: req.query.q, $options: 'i'}},
+                {city: {$regex: req.query.q, $options: 'i'}},
+                {district: {$regex: req.query.q, $options: 'i'}}
+            ]} : {};
+
+        sales.find(query).sort( { startDate: -1 } ).toArray(function (err, result) {
             if (err)
-                return res.status(500).json({message: err});
+                return res.status(500).json({
+                    message: err
+                });
 
             res.json({
                 sales: result
