@@ -12,9 +12,9 @@ const files     = require('./routes/files');
 
 
 const app   = express();
-const port  = 3030;
+const port = process.env.PORT || 3000;
 const cors  = require('cors');
-app.use(cors({credentials: true, origin: 'http://localhost:3000'}));
+app.use(cors());
 
 var http = require('http').createServer(app);
 var io = require('socket.io')(http);
