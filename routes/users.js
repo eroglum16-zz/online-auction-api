@@ -134,7 +134,7 @@ exports.save = function(req, res) {
                 registrationDate: Date.now()
             };
             try {
-                //users.insertOne(req.body);
+                users.insertOne(req.body);
                 res.json({
                     message: 'Kullanıcı başarıyla kaydedildi.'
                 });
